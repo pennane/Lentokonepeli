@@ -1,0 +1,5 @@
+# List of commit SHAs that will be ignored in `git blame`, showing the previous commit for the affected lines instead.  
+# This is useful for commits related to linting or formatting, as they typically do not add meaningful context to `git blame`.  
+# To hide these commits locally, run:  
+# `git config blame.ignoreRevsFile .git-blame-ignore-revs`  
+3b980e5dfe8593b32e36652a95dd9d86bd7566a8  
