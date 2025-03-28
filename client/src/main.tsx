@@ -9,13 +9,13 @@ import { SettingsProvider } from "./contexts/settingsContext.tsx";
 import { IntlProvider } from "./intl/IntlProvider.tsx";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-    <SettingsProvider>
-        <IntlProvider>
-            <MantineProvider>
+    <MantineProvider>
+        <SettingsProvider>
+            <IntlProvider>
                 <HashRouter>
                     <App />
                 </HashRouter>
-            </MantineProvider>
-        </IntlProvider>
-    </SettingsProvider>,
+            </IntlProvider>
+        </SettingsProvider>
+    </MantineProvider>,
 );

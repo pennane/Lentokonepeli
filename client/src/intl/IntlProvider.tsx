@@ -1,5 +1,6 @@
 import { FC, PropsWithChildren, useEffect, useState } from "react";
 import { MessageFormatElement, IntlProvider as ReactIntlIntlProvider } from "react-intl";
+import Loader from "../components/Loader";
 import { useSettingsContext } from "../contexts/settingsContext";
 
 const loadLocaleData = (locale: string): Promise<Record<string, MessageFormatElement[]>> =>
@@ -43,7 +44,7 @@ export const IntlProvider: FC<PropsWithChildren> = ({ children }) => {
     }, [settings.settings.locale]);
 
     if (!messages) {
-        return <div>Loading...</div>;
+        return <Loader />;
     }
 
     return (
