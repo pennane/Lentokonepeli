@@ -184,7 +184,7 @@ impl Plane {
             // Physical Model
             air_resistance: 1.0,
             gravity: 6.0,
-            gravity_pull: 0.04908738521234052,
+            gravity_pull: PI / 64.0,
             speed: 0.0,
             angle: 0.0, // This should probably be named radians
 
@@ -925,12 +925,12 @@ impl Plane {
 
     fn get_turn_step(&self) -> f64 {
         match self.plane_type.get() {
-            PlaneType::Albatros => 0.031415926535897934,
-            PlaneType::Junkers => 0.028559933214452663,
-            PlaneType::Fokker => 0.0483321946706122,
-            PlaneType::Bristol => 0.036110260386089575,
-            PlaneType::Salmson => 0.031415926535897934,
-            PlaneType::Sopwith => 0.04487989505128276,
+            PlaneType::Albatros => PI / 100.0,
+            PlaneType::Junkers => PI / 110.0,
+            PlaneType::Fokker => PI / 65.5,
+            PlaneType::Bristol => PI / 87.5,
+            PlaneType::Salmson => PI / 100.0,
+            PlaneType::Sopwith => PI / 70.5,
         }
     }
 

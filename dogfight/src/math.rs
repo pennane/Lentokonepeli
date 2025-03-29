@@ -21,3 +21,8 @@ pub fn radians_to_direction(angle_radians: f64) -> u8 {
     let direction = angle_radians * (DIRECTIONS as f64) / TAU;
     direction as u8
 }
+
+pub fn degrees_to_radians(degrees: f64) -> f64 {
+    let radians = degrees * std::f64::consts::PI / 180.0;
+    radians
+}

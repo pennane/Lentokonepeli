@@ -1,4 +1,3 @@
-
 use crate::{
     collision::{BoundingBox, SolidEntity},
     entities::{
@@ -12,6 +11,7 @@ use crate::{
     },
     game_event::{KillEvent, KillMethod},
     input::PlayerKeyboard,
+    math::degrees_to_radians,
     output::ServerOutput,
     world::World,
 };
@@ -236,7 +236,7 @@ impl World {
 
         //log(format!("bounds: {:?}", bounding_boxes));
 
-        let mut angle: f64 = 4.71238898038469;
+        let mut angle: f64 = degrees_to_radians(270.0);
         let mut target: Option<BoundingBox> = None;
         let mut i: i32 = 250_000;
 
@@ -254,7 +254,7 @@ impl World {
             }
 
             if let Some(closest) = target {
-                angle = count_angle(&my_box, &closest);
+                angle = count_angle_radians(&my_box, &closest);
                 // For some reason the rust version is returning negative angles with atan2
                 // and the java version doesn't, maybe the java version y coords are flipped?
                 // Either way, ChatGPT says this is the way to flip it and it seems to work
@@ -264,7 +264,7 @@ impl World {
                 //
             }
 
-            if (angle < 2.199114857512855) && (angle > 0.9424777960769379) {
+            if (angle < degrees_to_radians(126.0)) && (angle > degrees_to_radians(54.0)) {
                 if let Some(closest) = target {
                     //System.out.println("Shooting down: " + localObject1 + " " + ((SolidEntity)localObject1).getCollisionBounds() + " " + d + " " + i);
                 } else {
@@ -303,19 +303,12 @@ impl World {
     }
 }
 
-fn count_angle(my_box: &BoundingBox, bbox: &BoundingBox) -> f64 {
+fn count_angle_radians(my_box: &BoundingBox, bbox: &BoundingBox) -> f64 {
     let i = (bbox.x + bbox.width / 2) as i32;
     let j = (bbox.y + bbox.height / 2) as i32;
     let k = (my_box.x + my_box.width / 2) as i32;
     let m = (my_box.y + my_box.height / 2) as i32;
     ((j - m) as f64).atan2((i - k) as f64)
-    /*
-    int i = paramSolidEntity.getCollisionBounds().x + paramSolidEntity.getCollisionBounds().width / 2;
-    int j = paramSolidEntity.getCollisionBounds().y + paramSolidEntity.getCollisionBounds().height / 2;
-    int k = this.x / 100 + this.w / 2;
-    int m = this.y / 100 + this.h / 2;
-    return Math.atan2(j - m, i - k);
-     */
 }
 
 fn count_distance(my_box: &BoundingBox, bbox: &BoundingBox) -> i32 {
@@ -324,11 +317,4 @@ fn count_distance(my_box: &BoundingBox, bbox: &BoundingBox) -> i32 {
     let k = (my_box.x + my_box.width / 2) as i32;
     let m = (my_box.y + my_box.height / 2) as i32;
     (i - k) * (i - k) + (j - m) * (j - m)
-    /*
-    int i = paramSolidEntity.getCollisionBounds().x + paramSolidEntity.getCollisionBounds().width / 2;
-    int j = paramSolidEntity.getCollisionBounds().y + paramSolidEntity.getCollisionBounds().height / 2;
-    int k = this.x / 100 + this.w / 2;
-    int m = this.y / 100 + this.h / 2;
-    return (i - k) * (i - k) + (j - m) * (j - m);
-     */
 }
