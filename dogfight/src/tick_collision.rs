@@ -7,13 +7,15 @@ use crate::{
         container::PlayerId,
         man::ManState,
         plane::{Plane, PlaneMode},
-        player::{self, ControllingEntity},
+        player::{self, ControllingEntity, RespawnType},
     },
     game_event::{KillEvent, KillMethod},
     output::ServerOutput,
     tick_actions::{Action, ExplosionData, RemoveData},
     world::World,
 };
+
+use RespawnType::*;
 
 impl World {
     /*
@@ -78,11 +80,11 @@ impl World {
                 if man.check_collision(runway) {
                     // If we're landing on the correct runway, choose a plane
                     if *runway.get_team() == man.get_team() {
-                        actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                        actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Instant)));
                     }
                     // Otherwise, kill the man
                     else {
-                        actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                        actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Suicide)));
 
                         if let Some((pid, _)) = controlling {
                             actions.push(Action::RegisterKill(KillEvent::new(
@@ -106,7 +108,7 @@ impl World {
                         }
                         // Otherwise, kill the man
                         _ => {
-                            actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                            actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Suicide)));
 
                             if let Some((pid, _)) = controlling {
                                 actions.push(Action::RegisterKill(KillEvent::new(
@@ -136,7 +138,7 @@ impl World {
                                         KillMethod::Man,
                                     )));
                                 }
-                                actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                                actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Suicide)));
                             } else {
                                 man.set_state(ManState::Standing);
                                 let h = man.get_collision_image().unwrap().height();
@@ -163,7 +165,7 @@ impl World {
                         )));
                     }
                     // just kill me
-                    actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                    actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Suicide)));
                     //log(&format!("man collide coast!").into());
                     continue 'men;
                 }
@@ -180,7 +182,7 @@ impl World {
                             KillMethod::Man,
                         )));
                     }
-                    actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                    actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Suicide)));
                     continue 'men;
                 }
             }
@@ -254,7 +256,7 @@ impl World {
                             KillMethod::Man,
                         )));
                     }
-                    actions.push(Action::RemoveEntity(RemoveData::Plane(*plane_id)));
+                    actions.push(Action::RemoveEntity(RemoveData::Plane(*plane_id, Default)));
 
                     blow_up(
                         &mut actions,
@@ -281,7 +283,7 @@ impl World {
                             KillMethod::Man,
                         )));
                     }
-                    actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                    actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Default)));
                     blow_up(
                         &mut actions,
                         Some(bomb.player_id()),
@@ -405,7 +407,7 @@ impl World {
                             )));
 
                             actions.push(Action::RemoveEntity(RemoveData::Bullet(*bullet_id)));
-                            actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                            actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Default)));
                         }
                     }
                     continue 'bullets;
@@ -530,7 +532,7 @@ impl World {
                         blow_up(
                             &mut actions,
                             explosion.player_id(),
-                            RemoveData::Plane(*plane_id),
+                            RemoveData::Plane(*plane_id, Default),
                             plane.get_client_x(),
                             plane.get_client_y(),
                         );
@@ -554,7 +556,7 @@ impl World {
                             )));
                         }
                     }
-                    actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                    actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Default)));
                 }
             }
 
@@ -648,7 +650,7 @@ impl World {
                             victim,
                             KillMethod::Man,
                         )));
-                        actions.push(Action::RemoveEntity(RemoveData::Man(*man_id)));
+                        actions.push(Action::RemoveEntity(RemoveData::Man(*man_id, Default)));
                     }
                 }
             }
@@ -698,7 +700,7 @@ impl World {
                         blow_up(
                             &mut actions,
                             Some(plane.player_id()),
-                            RemoveData::Plane(*plane_id),
+                            RemoveData::Plane(*plane_id, Suicide),
                             plane.get_client_x(),
                             plane.get_client_y(),
                         );
@@ -713,7 +715,7 @@ impl World {
                     blow_up(
                         &mut actions,
                         Some(plane.player_id()),
-                        RemoveData::Plane(*plane_id),
+                        RemoveData::Plane(*plane_id, Suicide),
                         plane.get_client_x(),
                         plane.get_client_y(),
                     );
@@ -728,7 +730,7 @@ impl World {
                     blow_up(
                         &mut actions,
                         Some(plane.player_id()),
-                        RemoveData::Plane(*plane_id),
+                        RemoveData::Plane(*plane_id, Suicide),
                         plane.get_client_x(),
                         plane.get_client_y(),
                     );
@@ -742,7 +744,7 @@ impl World {
                     blow_up(
                         &mut actions,
                         Some(plane.player_id()),
-                        RemoveData::Plane(*plane_id),
+                        RemoveData::Plane(*plane_id, Suicide),
                         plane.get_client_x(),
                         plane.get_client_y(),
                     );
@@ -753,7 +755,7 @@ impl World {
             for (_, water) in self.waters.get_map_mut() {
                 if plane.check_collision(water) {
                     kill_plane_and_give_credit(&mut actions, plane, &controlling);
-                    actions.push(Action::RemoveEntity(RemoveData::Plane(*plane_id)));
+                    actions.push(Action::RemoveEntity(RemoveData::Plane(*plane_id, Suicide)));
                     continue 'planes;
                 }
             }

@@ -1,5 +1,6 @@
 import { ControllingEntity } from "dogfight-types/ControllingEntity";
 import { PlayerProperties } from "dogfight-types/PlayerProperties";
+import { RespawnType } from "dogfight-types/RespawnType";
 import * as PIXI from "pixi.js";
 import { Entity, EntityUpdateCallbacks } from "./entity";
 
@@ -20,6 +21,8 @@ export class Player implements Entity<PlayerProperties> {
         kills: 0,
         deaths: 0,
         score: 0,
+        respawn_timer: 0,
+        respawn_type: "Default" as RespawnType,
     };
 
     private onChange: OnChangeControl;
@@ -41,6 +44,8 @@ export class Player implements Entity<PlayerProperties> {
         kills: () => {},
         deaths: () => {},
         score: () => {},
+        respawn_timer: () => {},
+        respawn_type: () => {},
         controlling: (oldProps) => {
             if (oldProps.controlling !== undefined)
                 this.onChange(oldProps.controlling, this.props.controlling, this.props);

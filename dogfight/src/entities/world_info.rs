@@ -20,6 +20,7 @@ pub struct WorldInfo {
     state: Property<Option::<WorldState>>,
     #[rustfmt::skip]
     winner: Property<Option::<Team>>,
+    game_time_remaining: Property<u16>,
 }
 
 impl WorldInfo {
@@ -27,7 +28,28 @@ impl WorldInfo {
         Self {
             state: Property::new(Some(WorldState::Intermission)),
             winner: Property::new(None),
+            game_time_remaining: Property::new(0),
         }
+    }
+
+    pub fn set_state(&mut self, state: WorldState) {
+        self.state.set(Some(state));
+    }
+
+    pub fn get_state(&self) -> Option<WorldState> {
+        *self.state.get()
+    }
+
+    pub fn set_winner(&mut self, winner: Option<Team>) {
+        self.winner.set(winner);
+    }
+
+    pub fn get_game_time_remaining(&self) -> u16 {
+        *self.game_time_remaining.get()
+    }
+
+    pub fn set_game_time_remaining(&mut self, seconds: u16) {
+        self.game_time_remaining.set(seconds);
     }
 
     pub fn get_all_full_state(&self) -> EntityChange {

@@ -18,6 +18,7 @@ use crate::{
         runway::Runway,
         types::{BackgroundItemType, Facing, Team, Terrain},
         water::Water,
+        world_info::WorldState,
     },
     images::{
         get_image, BEACH_L, BEACH_L_DESERT, FLAG_GER_1, HEADQUARTER_GERMANS, HEADQUARTER_RAF,
@@ -117,6 +118,9 @@ impl World {
                 }
             }
         }
+
+        self.world_info.set_state(WorldState::Playing);
+        self.world_info.set_game_time_remaining(600); // 10 minutes default
     }
 }
 

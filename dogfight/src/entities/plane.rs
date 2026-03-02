@@ -15,7 +15,7 @@ use crate::{
     input::PlayerKeyboard,
     math::{get_client_percentage, radians_to_direction},
     network::{property::Property, EntityProperties, NetworkedEntity},
-    tick_actions::{Action, RemoveData},
+    tick_actions::Action,
     world::RESOLUTION,
 };
 

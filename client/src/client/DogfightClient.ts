@@ -11,6 +11,7 @@ import { IntlShape } from "react-intl";
 import { Entity, isFollowable } from "./entities/entity";
 import { Player } from "./entities/player";
 import { DEFAULT_ENTITIES, deleteEntity, destroyEntities, entityCollection, upsertEntity } from "./EntityManager";
+import { TimerColor } from "./constants";
 import { formatName } from "./helpers";
 import { GameHUD } from "./hud";
 import { GameKeyboard } from "./keyboard";
@@ -63,6 +64,33 @@ export class DogfightClient {
     private runwaySelector: RunwaySelector = new RunwaySelector();
     private gameHUD: GameHUD = new GameHUD();
     private killFeed: KillFeed = new KillFeed();
+    private respawnOverlay: PIXI.Container = new PIXI.Container();
+    private respawnText: PIXI.Text = new PIXI.Text("", {
+        fontFamily: "Arial",
+        fontWeight: "bold",
+        fontSize: 28,
+        fill: TimerColor.Normal,
+        align: "center",
+        stroke: 0x000000,
+        strokeThickness: 3,
+    });
+    private respawnPenaltyText: PIXI.Text = new PIXI.Text("", {
+        fontFamily: "Arial",
+        fontSize: 16,
+        fill: TimerColor.Normal,
+        align: "center",
+        stroke: 0x000000,
+        strokeThickness: 2,
+    });
+    private winnerOverlay: PIXI.Text = new PIXI.Text("", {
+        fontFamily: "Arial",
+        fontWeight: "bold",
+        fontSize: 32,
+        fill: TimerColor.Normal,
+        align: "center",
+        stroke: 0x000000,
+        strokeThickness: 4,
+    });
     public keyboard: GameKeyboard = new GameKeyboard();
 
     private callbacks?: GameClientCallbacks;
@@ -80,7 +108,13 @@ export class DogfightClient {
 
         this.sky.position.set(0, -250);
 
-        const containers = [this.killFeed.container, this.runwaySelector.container, this.teamChooser.container];
+        const containers = [
+            this.killFeed.container,
+            this.runwaySelector.container,
+            this.teamChooser.container,
+            this.respawnOverlay,
+            this.winnerOverlay
+        ];
 
         this.renderClient = new RenderClient({ background: this.sky, containers, hud: this.gameHUD.container });
     }
@@ -143,6 +177,24 @@ export class DogfightClient {
         // Set KillFeed area
         {
             this.killFeed.container.position.set(510, 0);
+        }
+
+        // set respawn overlay
+        {
+            this.respawnText.anchor.set(0.5, 0.5);
+            this.respawnPenaltyText.anchor.set(0.5, 0);
+            this.respawnOverlay.addChild(this.respawnText);
+            this.respawnOverlay.addChild(this.respawnPenaltyText);
+            this.respawnOverlay.visible = false;
+            this.respawnOverlay.position.set(width, height - this.gameHUD.container.height / 2);
+            this.respawnPenaltyText.position.set(0, 24);
+        }
+
+        // winner announcement
+        {
+            this.winnerOverlay.anchor.set(0.5, 0.5);
+            this.winnerOverlay.position.set(width, height);
+            this.winnerOverlay.visible = false;
         }
 
         // set runway selector
@@ -241,8 +293,33 @@ export class DogfightClient {
             }
         }
 
+        if (props.respawn_timer !== undefined) {
+            const seconds = Math.ceil(props.respawn_timer / 100);
+            this.respawnText.text = seconds > 0 ? `Respawning in ${seconds}` : "";
+        }
+
+        if (props.respawn_type !== undefined) {
+            switch (props.respawn_type) {
+                case "Suicide":
+                    this.respawnPenaltyText.text = "(Suicide penalty)";
+                    break;
+                case "Teamkill":
+                    this.respawnPenaltyText.text = "(Teamkill penalty)";
+                    break;
+                default:
+                    this.respawnPenaltyText.text = "";
+                    break;
+            }
+        }
+
         switch (props.state) {
+            case "WaitingRespawn": {
+                this.runwaySelector.container.visible = false;
+                this.respawnOverlay.visible = true;
+                break;
+            }
             case "ChoosingRunway": {
+                this.respawnOverlay.visible = false;
                 this.runwaySelector.container.visible = true;
                 this.runwaySelector.selectRunway(this.entities.Runway, (runwayPos) => {
                     this.centerCamera(runwayPos.x, runwayPos.y);
@@ -374,6 +451,27 @@ export class DogfightClient {
         if (me?.props.controlling) {
             if (id === me.props.controlling.data && data?.type === me.props.controlling.type) {
                 this.followEntity(entity);
+            }
+        }
+
+        if (data?.type === "WorldInfo") {
+            if (data.props.game_time_remaining !== undefined) {
+                this.gameHUD.updateClock(data.props.game_time_remaining);
+            }
+            if (data.props.state === "PostGame") {
+                const worldInfo = this.entities.WorldInfo.collection.values().next().value;
+                const winner = worldInfo?.props.winner;
+                if (winner === "Centrals") {
+                    this.winnerOverlay.text = "Centrals have won!";
+                } else if (winner === "Allies") {
+                    this.winnerOverlay.text = "Allies have won!";
+                } else {
+                    this.winnerOverlay.text = "Tie!";
+                }
+                this.winnerOverlay.visible = true;
+            }
+            if (data.props.state === "Playing") {
+                this.winnerOverlay.visible = false;
             }
         }
 

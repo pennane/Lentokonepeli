@@ -6,6 +6,7 @@ export class WorldInfo implements Entity<WorldInfoProperties> {
     public props: Required<WorldInfoProperties> = {
         state: "Intermission",
         winner: "Allies",
+        game_time_remaining: 0,
     };
 
     constructor() {}
@@ -17,6 +18,7 @@ export class WorldInfo implements Entity<WorldInfoProperties> {
     public updateCallbacks: EntityUpdateCallbacks<WorldInfoProperties> = {
         state: () => {},
         winner: () => {},
+        game_time_remaining: () => {},
     };
 
     public destroy() {}

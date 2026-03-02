@@ -1,5 +1,8 @@
 use crate::{
-    entities::player::ControllingEntity, input::PlayerKeyboard, tick_actions::Action, world::World,
+    entities::player::{ControllingEntity, PlayerState},
+    input::PlayerKeyboard,
+    tick_actions::Action,
+    world::World,
 };
 
 /*
@@ -35,6 +38,12 @@ impl World {
     */
     pub fn tick_entities(&mut self) -> Vec<Action> {
         let mut actions = vec![];
+
+        for (_, player) in self.players.get_map_mut() {
+            if player.get_state() == PlayerState::WaitingRespawn {
+                player.tick_respawn();
+            }
+        }
 
         for (player_id, player) in self.players.get_map_mut() {
             if let Some(controlled) = player.get_controlling() {

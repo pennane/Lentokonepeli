@@ -16,15 +16,16 @@ use crate::{
         plane::Plane,
         player::{Player, PlayerGuid},
         runway::Runway,
-        types::EntityType,
+        types::{EntityType, Team},
         water::Water,
-        world_info::WorldInfo,
+        world_info::{WorldInfo, WorldState},
     },
     input::ServerInput,
     output::ServerOutput,
     replay::file::ReplayFile,
 };
 
+pub const TICKS_PER_SECOND: u32 = 100;
 pub const DIRECTIONS: i32 = 256;
 pub const RESOLUTION: i32 = 100;
 pub const LEVEL_BORDER_X: i16 = 20_000;
@@ -123,6 +124,25 @@ impl World {
         // 3. Process collision and get output
         let tick_coll = self.tick_collision_entities();
         self.game_output.extend(tick_coll);
+
+        // Game time moves once per second (it tracks seconds, duh)
+        if self.game_tick % TICKS_PER_SECOND == 0 {
+            self.tick_game_time();
+        }
+    }
+
+    fn tick_game_time(&mut self) {
+        if self.world_info.get_state() != Some(WorldState::Playing) {
+            return;
+        }
+
+        let remaining = self.world_info.get_game_time_remaining().saturating_sub(1); // clamps to 0
+
+        self.world_info.set_game_time_remaining(remaining);
+
+        if remaining == 0 {
+            self.end_round();
+        }
     }
 
     pub fn flush_changed_state(&mut self) -> Vec<ServerOutput> {
@@ -173,5 +193,29 @@ impl World {
             .get_map_mut()
             .iter_mut()
             .find(|(_, p)| p.get_guid().eq(guid))
+    }
+
+    fn end_round(&mut self) {
+        let mut centrals_score: i16 = 0;
+        let mut allies_score: i16 = 0;
+
+        for (_, player) in self.players.get_map() {
+            match player.get_team() {
+                Some(Team::Centrals) => centrals_score += player.get_score(),
+                Some(Team::Allies) => allies_score += player.get_score(),
+                None => {}
+            }
+        }
+
+        let winner = if centrals_score > allies_score {
+            Some(Team::Centrals)
+        } else if allies_score > centrals_score {
+            Some(Team::Allies)
+        } else {
+            None
+        };
+
+        self.world_info.set_winner(winner);
+        self.world_info.set_state(WorldState::PostGame);
     }
 }

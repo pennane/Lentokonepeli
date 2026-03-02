@@ -55,3 +55,8 @@ export const TeamColor = {
 } as const;
 
 export type TeamColor = (typeof TeamColor)[keyof typeof TeamColor];
+
+export const TimerColor = {
+    Normal: 0xafaf5a,
+    Urgent: 0xff8246,
+} as const;

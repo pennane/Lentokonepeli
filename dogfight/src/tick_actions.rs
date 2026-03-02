@@ -7,7 +7,7 @@ use crate::{
         explosion::Explosion,
         man::Man,
         plane::PlaneType,
-        player::{ControllingEntity, PlayerState},
+        player::{ControllingEntity, RespawnType},
         types::Team,
     },
     game_event::{KillEvent, KillMethod},
@@ -17,8 +17,8 @@ use crate::{
 };
 
 pub enum RemoveData {
-    Man(ManId),
-    Plane(PlaneId),
+    Man(ManId, RespawnType),
+    Plane(PlaneId, RespawnType),
     Bomb(BombId),
     Explosion(ExplosionId),
     Bullet(BulletId),
@@ -101,7 +101,7 @@ impl World {
             };
         }
 
-        output.extend(self.remove_entity(RemoveData::Plane(plane_id)));
+        output.extend(self.remove_entity(RemoveData::Plane(plane_id, RespawnType::Instant)));
         output
     }
     pub fn process_takeoff_action(
@@ -130,43 +130,36 @@ impl World {
         output
     }
 
-    fn remove_entity(&mut self, remove_controlling: RemoveData) -> Vec<ServerOutput> {
+    fn remove_entity(&mut self, remove_data: RemoveData) -> Vec<ServerOutput> {
         let output = vec![];
 
-        match remove_controlling {
-            RemoveData::Man(man_id) => {
-                self.men.remove(man_id);
+        let controlled = match remove_data {
+            RemoveData::Man(id, respawn) => {
+                self.men.remove(id);
+                Some((ControllingEntity::Man(id), respawn))
             }
-            RemoveData::Plane(plane_id) => {
-                self.planes.remove(plane_id);
+            RemoveData::Plane(id, respawn) => {
+                self.planes.remove(id);
+                Some((ControllingEntity::Plane(id), respawn))
             }
-            RemoveData::Bomb(bomb_id) => {
-                self.bombs.remove(bomb_id);
+            RemoveData::Bomb(id) => {
+                self.bombs.remove(id);
+                None
             }
-            RemoveData::Explosion(explosion_id) => {
-                self.explosions.remove(explosion_id);
+            RemoveData::Explosion(id) => {
+                self.explosions.remove(id);
+                None
             }
-            RemoveData::Bullet(bullet_id) => {
-                self.bullets.remove(bullet_id);
+            RemoveData::Bullet(id) => {
+                self.bullets.remove(id);
+                None
             }
         };
 
-        // If we're removing an entity that might be controlled,
-        // we want to check to see if a player is indeed controlling it
-        // and if so, remove that control.
-        let control_test: Option<ControllingEntity> = match remove_controlling {
-            RemoveData::Man(man_id) => Some(ControllingEntity::Man(man_id)),
-            RemoveData::Plane(plane_id) => Some(ControllingEntity::Plane(plane_id)),
-            RemoveData::Bomb(_) => None,
-            RemoveData::Explosion(_) => None,
-            RemoveData::Bullet(_) => None,
-        };
-
-        if let Some(controlled) = control_test {
-            if let Some((_, player)) = self.players.get_player_controlling(controlled) {
+        if let Some((entity, respawn)) = controlled {
+            if let Some((_, player)) = self.players.get_player_controlling(entity) {
                 player.set_controlling(None);
-                // TODO: show temporary death screen or something
-                player.set_state(PlayerState::ChoosingRunway);
+                player.start_respawn(respawn);
             }
         }
 
@@ -232,7 +225,6 @@ impl World {
                                 match *killer.get_team() {
                                     Some(team) => {
                                         if team == vict_team {
-                                            // If the victim was on our team, we teamkilled :(
                                             killer.adjust_score(-8);
                                         } else {
                                             killer.adjust_kills(1);
@@ -246,7 +238,7 @@ impl World {
                         None => {}
                     }
                 }
-                // If we killed ourselves
+                // Suicide
                 None => {
                     if let Some(killer) = self.players.get_mut(kill_event.killer) {
                         killer.set_deaths(killer.get_deaths() + 1);

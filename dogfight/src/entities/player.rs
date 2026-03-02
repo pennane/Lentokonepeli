@@ -39,6 +39,27 @@ pub enum PlayerState {
     Refueling,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS, EnumBytes)]
+#[ts(export)]
+pub enum RespawnType {
+    Instant,
+    Default,
+    Suicide,
+    Teamkill,
+}
+
+impl RespawnType {
+    pub fn ticks(self) -> u16 {
+        let tps = crate::world::TICKS_PER_SECOND as u16;
+        match self {
+            RespawnType::Instant => 0,
+            RespawnType::Default => 4 * tps,
+            RespawnType::Suicide => 8 * tps,
+            RespawnType::Teamkill => 10 * tps,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
 #[ts(export)]
 #[serde(tag = "type", content = "data")]
@@ -111,6 +132,8 @@ pub struct Player {
     kills: Property<i16>,
     deaths: Property<u16>,
     score: Property<i16>,
+    respawn_timer: Property<u16>,
+    respawn_type: Property<RespawnType>,
 }
 
 impl Player {
@@ -129,7 +152,13 @@ impl Player {
             kills: Property::new(0),
             deaths: Property::new(0),
             score: Property::new(0),
+            respawn_timer: Property::new(0),
+            respawn_type: Property::new(RespawnType::Default),
         }
+    }
+
+    pub fn get_score(&self) -> i16 {
+        *self.score.get()
     }
 
     pub fn get_kills(&self) -> i16 {
@@ -202,5 +231,28 @@ impl Player {
 
     pub(crate) fn set_clan(&mut self, clan: String) -> () {
         self.clan.set(Some(clan));
+    }
+
+    pub fn get_state(&self) -> PlayerState {
+        *self.state.get()
+    }
+
+    pub fn start_respawn(&mut self, respawn_type: RespawnType) {
+        let ticks = respawn_type.ticks();
+        if ticks == 0 {
+            self.state.set(PlayerState::ChoosingRunway);
+        } else {
+            self.state.set(PlayerState::WaitingRespawn);
+            self.respawn_type.set(respawn_type);
+            self.respawn_timer.set(ticks);
+        }
+    }
+
+    pub fn tick_respawn(&mut self) {
+        let remaining = self.respawn_timer.get() - 1;
+        self.respawn_timer.set(remaining);
+        if remaining == 0 {
+            self.state.set(PlayerState::ChoosingRunway);
+        }
     }
 }

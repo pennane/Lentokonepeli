@@ -13,6 +13,7 @@ use crate::{
 
 use super::{
     container::{ManId, PlayerId},
+    player::RespawnType,
     entity::Entity,
     types::{EntityType, Team},
 };
@@ -235,7 +236,7 @@ impl Man {
     }
 
     fn blow_me_up(&mut self, my_owner: PlayerId, actions: &mut Vec<Action>, man_id: ManId) {
-        actions.push(Action::RemoveEntity(RemoveData::Man(man_id)));
+        actions.push(Action::RemoveEntity(RemoveData::Man(man_id, RespawnType::Suicide)));
 
         // We don't want the top left corner, but rather bottom middle
         let x = self.client_x.get() + (self.image_standing.width() / 2) as i16;
